@@ -63,8 +63,7 @@ exports.getUser = async (req, res) => {
     const user = await User.findById(req.params._id);
     if (user) {
         return res.status(200).json({
-            success: true,
-            data: user,
+            ...user.toObject(),
         });
     }
     return res.status(404).json({
