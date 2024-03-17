@@ -6,7 +6,7 @@ exports.registerUser = async (req, res) => {
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-        return res.status(205).json({
+        return res.status(202).json({
             success: false,
             message: "User already exists",
         });
@@ -36,7 +36,7 @@ exports.loginUser = async (req, res) => {
     const user = await User.findOne({ email }).select("+password");
 
     if (!user) {
-        return res.status(205).json({
+        return res.status(202).json({
             success: false,
             message: "Invalid email or password",
         });
@@ -45,7 +45,7 @@ exports.loginUser = async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
-        return res.status(205).json({
+        return res.status(202).json({
             success: false,
             message: "Invalid Password",
         });
@@ -66,7 +66,7 @@ exports.getUser = async (req, res) => {
             ...user.toObject(),
         });
     }
-    return res.status(205).json({
+    return res.status(202).json({
         success: false,
         message: "User not found",
     });
