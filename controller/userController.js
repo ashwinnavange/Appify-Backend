@@ -18,6 +18,7 @@ exports.registerUser = async (req, res) => {
         success: true,
         message: "User Created",
         _id: user._id,
+        name: user.name,
     })
 };
 
@@ -55,6 +56,7 @@ exports.loginUser = async (req, res) => {
             success: true,
             message: "Logged in",
             _id: user._id,
+            name: user.name,
         });
     }
 };
