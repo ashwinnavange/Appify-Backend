@@ -10,42 +10,50 @@ const storage = getStorage();
 const upload = multer({ storage: multer.memoryStorage() });
 
 exports.getAllApps = async (req, resp) => {
-    const result = await apps.find();
-    resp.send(result);
+    try {
+        const projection = { userId: 0, packageName: 0, appFile: 0, description: 0, categories: 0, photos: 0, __v: 0, createdAt: 0, whatsNew: 0 };
+
+        const result = await apps.find({}, projection);
+
+        resp.send(result);
+    } catch (error) {
+        return resp.status(400).json({
+            success: false,
+            message: error.message,
+        });
+    }
 };
+
+exports.getApp = async (req, resp) => {
+    const app = await apps.findOne({ packageName: req.params.packageName });
+    if (!app) {
+        return resp.status(400).json({
+            success: false,
+            message: "App not found",
+        });
+    }
+    resp.status(200).json(app);
+}
 
 exports.postApp = async (req, resp) => {
     try {
-        const existingApp = await apps.findOne({packageName: req.body.packageName });
+        const existingApp = await apps.findOne({ packageName: req.body.packageName });
         if (existingApp) {
             return resp.status(202).json({
                 success: false,
                 message: "App already exists",
             });
         }
-        let logoFile = req.files['logo'][0];
-        logoFile = Buffer.from(logoFile.buffer);
-        const logoRef = ref(storage, `${req.body.packageName}/logos/${req.body.appName}`);
-        const logoSnapshot = await uploadBytesResumable(logoRef, logoFile.buffer);
-        const logoDownloadURL = await getDownloadURL(logoSnapshot.ref);
-
-
-        let appFile = req.files['appFile'][0];
-        appFile = Buffer.from(appFile.buffer);
-        const appRef = ref(storage, `${req.body.packageName}/apps/${req.body.appName}`);
-        const appSnapshot = await uploadBytesResumable(appRef, appFile.buffer);
-        const appDownloadURL = await getDownloadURL(appSnapshot.ref);
+        const logoDownloadURL = await uploadToFirebase(req.files['logo'][0], `${req.body.packageName}/logos/${req.body.appName}.png`);
+        const appDownloadURL = await uploadToFirebase(req.files['appFile'][0], `${req.body.packageName}/apps/${req.body.appName}.apk`);
 
         const photoDownloadUrls = [];
         const photoFiles = req.files['photos'];
-        let i=0;
-        for (let photo of photoFiles) {
-            if(i === 4) break;
-            photo = Buffer.from(photo.buffer);
-            const photoRef = ref(storage, `${req.body.packageName}/photos/${req.body.appName + " " + i++}`);
-            const photoSnapshot = await uploadBytesResumable(photoRef, photo.buffer);
-            const photoUrl = await getDownloadURL(photoSnapshot.ref);
-            photoDownloadUrls.push(photoUrl);
+        let i = 0;
+        for (const photo in photoFiles) {
+            if (i === 4) break;
+            const photoDownloadUrl = await uploadToFirebase(photo, `${req.body.packageName}/apps/${req.body.appName}.apk`);
+            photoDownloadUrls.push(photoDownloadUrl);
         }
         const newApp = new apps({
             logo: logoDownloadURL,
@@ -63,12 +71,12 @@ exports.postApp = async (req, resp) => {
             categories: req.body.categories,
             photos: photoDownloadUrls,
             totalDownloads: req.body.totalDownloads,
-          });
-      
-          // Save the new app document to MongoDB
-          const savedApp = await newApp.save();
-      
-          resp.status(201).json(savedApp);
+        });
+
+        // Save the new app document to MongoDB
+        const savedApp = await newApp.save();
+
+        resp.status(201).json(savedApp);
     } catch (error) {
         return resp.status(400).send(error.message)
     }
@@ -78,6 +86,12 @@ const giveCurrentDateTime = () => {
     const today = new Date();
     let month = today.getMonth() + 1;
     month = month < 10 ? '0' + month : month;
-    const date = today.getDate() + '-' +  month + '-' + today.getFullYear();
+    const date = today.getDate() + '-' + month + '-' + today.getFullYear();
     return date;
 };
+
+const uploadToFirebase = async (file, path) => {
+    const ref = ref(storage, path);
+    const snapshot = await uploadBytesResumable(ref, file.buffer);
+    return await getDownloadURL(snapshot.ref);
+}
