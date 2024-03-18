@@ -23,13 +23,15 @@ exports.postApp = async (req, resp) => {
                 message: "App already exists",
             });
         }
-        const logoFile = req.files['logo'][0];
+        let logoFile = req.files['logo'][0];
+        logoFile = Buffer.from(logoFile.buffer);
         const logoRef = ref(storage, `${req.body.packageName}/logos/${req.body.appName}`);
         const logoSnapshot = await uploadBytesResumable(logoRef, logoFile.buffer);
         const logoDownloadURL = await getDownloadURL(logoSnapshot.ref);
 
 
-        const appFile = req.files['appFile'][0];
+        let appFile = req.files['appFile'][0];
+        appFile = Buffer.from(appFile.buffer);
         const appRef = ref(storage, `${req.body.packageName}/apps/${req.body.appName}`);
         const appSnapshot = await uploadBytesResumable(appRef, appFile.buffer);
         const appDownloadURL = await getDownloadURL(appSnapshot.ref);
@@ -37,8 +39,9 @@ exports.postApp = async (req, resp) => {
         const photoDownloadUrls = [];
         const photoFiles = req.files['photos'];
         let i=0;
-        for (const photo of photoFiles) {
+        for (let photo of photoFiles) {
             if(i === 4) break;
+            photo = Buffer.from(photo.buffer);
             const photoRef = ref(storage, `${req.body.packageName}/photos/${req.body.appName + " " + i++}`);
             const photoSnapshot = await uploadBytesResumable(photoRef, photo.buffer);
             const photoUrl = await getDownloadURL(photoSnapshot.ref);
