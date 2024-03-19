@@ -26,6 +26,7 @@ const appsSchema = new mongoose.Schema({
   categories: [String],
   photos: [String],
   totalDownloads: Number,
+  version: String,
 });
 
 const apps = new mongoose.model("Apps", appsSchema);

@@ -11,11 +11,26 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 exports.getAllApps = async (req, resp) => {
     try {
-        const projection = { userId: 0, packageName: 0, appFile: 0, description: 0, categories: 0, photos: 0, __v: 0, createdAt: 0, whatsNew: 0 };
+        const projection = { userId: 0, appFile: 0, description: 0, categories: 0, photos: 0, __v: 0, createdAt: 0, whatsNew: 0 };
 
-        const result = await apps.find({}, projection);
+        const result = await apps.find({type:"App"}, projection);
 
-        resp.send(result);
+        resp.send({apps : result});
+    } catch (error) {
+        return resp.status(400).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
+exports.getAllGames = async (req, resp) => {
+    try {
+        const projection = { userId: 0, appFile: 0, description: 0, categories: 0, photos: 0, __v: 0, createdAt: 0, whatsNew: 0 };
+
+        const result = await apps.find({ type: "Game" }, projection);
+
+        resp.send({apps : result});
     } catch (error) {
         return resp.status(400).json({
             success: false,
@@ -44,17 +59,30 @@ exports.postApp = async (req, resp) => {
                 message: "App already exists",
             });
         }
-        const logoDownloadURL = await uploadToFirebase(req.files['logo'][0], `${req.body.packageName}/logos/${req.body.appName}.png`);
-        const appDownloadURL = await uploadToFirebase(req.files['appFile'][0], `${req.body.packageName}/apps/${req.body.appName}.apk`);
+
+        const appName = req.body.appName;
+
+        // Function to get the mimetype extension of a file
+        const getMimetypeExtension = (file) => {
+            const mimeTypeParts = file.mimetype.split('/');
+            if (mimeTypeParts.length === 2) {
+                return mimeTypeParts[1];
+            }
+            return '';
+        };
+
+        const logoDownloadURL = await uploadToFirebase(req.files['logo'][0], `${req.body.packageName}/logos/${appName}.${getMimetypeExtension(req.files['logo'][0])}`);
+        const appDownloadURL = await uploadToFirebase(req.files['appFile'][0], `${req.body.packageName}/apps/${appName}.${getMimetypeExtension(req.files['appFile'][0])}`);
 
         const photoDownloadUrls = [];
         const photoFiles = req.files['photos'];
-        let i = 0;
-        for (const photo in photoFiles) {
+        for (let i = 0; i < photoFiles.length; i++) {
             if (i === 4) break;
-            const photoDownloadUrl = await uploadToFirebase(photo, `${req.body.packageName}/apps/${req.body.appName}.apk`);
+            const photoDownloadUrl = await uploadToFirebase(photoFiles[i], `${req.body.packageName}/photos/${appName}_${i}.${getMimetypeExtension(photoFiles[i])}`);
             photoDownloadUrls.push(photoDownloadUrl);
         }
+
+        // Create a new app object
         const newApp = new apps({
             logo: logoDownloadURL,
             appName: req.body.appName,
@@ -63,14 +91,15 @@ exports.postApp = async (req, resp) => {
             appFile: appDownloadURL,
             rating: req.body.rating,
             developerName: req.body.developerName,
-            type: req.body.type,
+            type: "App",
             shortDescription: req.body.shortDescription,
             description: req.body.description,
             whatsNew: req.body.whatsNew,
             createdAt: giveCurrentDateTime(),
-            categories: req.body.categories,
+            categories: req.body.categories.split(','),
             photos: photoDownloadUrls,
             totalDownloads: req.body.totalDownloads,
+            version: req.body.version,
         });
 
         // Save the new app document to MongoDB
@@ -82,6 +111,7 @@ exports.postApp = async (req, resp) => {
     }
 };
 
+
 const giveCurrentDateTime = () => {
     const today = new Date();
     let month = today.getMonth() + 1;
@@ -91,7 +121,7 @@ const giveCurrentDateTime = () => {
 };
 
 const uploadToFirebase = async (file, path) => {
-    const ref = ref(storage, path);
-    const snapshot = await uploadBytesResumable(ref, file.buffer);
+    const fileRef  = ref(storage, path);
+    const snapshot = await uploadBytesResumable(fileRef, file.buffer);
     return await getDownloadURL(snapshot.ref);
 }
