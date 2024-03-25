@@ -22,7 +22,7 @@ exports.getLibrary = async (req, res) => {
 exports.deleteApp = async (req, res) => {
     try {
         const app = await Apps.findOneAndDelete({ packageName: req.params.packageName });
-        await deleteResources(req, res);
+        //await deleteResources(req, res);
         if (!app) {
             return res.status(404).json({
                 success: false,
@@ -40,3 +40,17 @@ exports.deleteApp = async (req, res) => {
         });
     }
 }
+// TO DO
+// const deleteResources = async (req, res) => {
+//     const { data, error } = await supabase.storage
+//         .from('Appify')
+//         .remove([`${req.params.packageName}`]);
+
+//     if (error) {
+//         return res.status(400).json({
+//             success: false,
+//             message: error.message,
+//         });
+//     }
+
+// }
