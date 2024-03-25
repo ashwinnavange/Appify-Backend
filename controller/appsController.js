@@ -75,9 +75,22 @@ exports.postApp = async (req, resp) => {
         const logoDownloadURL = await uploadFile(logoFile.buffer, `${packageName}/logos/${appName}.${getMimetypeExtension(logoFile)}`);
         const appDownloadURL = await uploadFile(appAPK.buffer, `${packageName}/apps/${appName}.apk`);
 
+        if (!logoDownloadURL || !appDownloadURL) {
+            return resp.status(400).json({
+                success: false,
+                message: "Error uploading logo or app",
+            });
+        }
+
         for (let i = 0; i < photoFiles.length; i++) {
             if (i === 4) break;
             const photoDownloadUrl = await uploadFile(photoFiles[i].buffer, `${packageName}/photos/${appName}_${i}.${getMimetypeExtension(photoFiles[i])}`);
+            if (!photoDownloadUrl) {
+                return resp.status(400).json({
+                    success: false,
+                    message: "Error uploading photos",
+                });
+            }
             photoDownloadUrls.push(photoDownloadUrl);
         }
 
@@ -120,7 +133,7 @@ const getMimetypeExtension = (file) => {
 const uploadFile = async (file, fileOutputName) => {
     try {
         const blob = new Blob([file]);
-        const { data, error } = await supabase.storage.from('Appify').upload(fileOutputName, blob);
+        const { data, error } = await supabase.storage.from('Appify').upload(fileOutputName, blob,{ upsert: true });
         if (error) {
             console.error('Error uploading file:', error.message);
             return null;
