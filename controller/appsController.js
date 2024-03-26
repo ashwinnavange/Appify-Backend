@@ -83,7 +83,7 @@ exports.postApp = async (req, resp) => {
         }
 
         for (let i = 0; i < photoFiles.length; i++) {
-            if (i === 4) break;
+            if (i === 5) break;
             const photoDownloadUrl = await uploadFile(photoFiles[i].buffer, `${packageName}/photos/${appName}_${i}.${getMimetypeExtension(photoFiles[i])}`);
             if (!photoDownloadUrl) {
                 return resp.status(400).json({
