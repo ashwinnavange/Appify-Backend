@@ -9,7 +9,9 @@ exports.getAllApps = async (req, resp) => {
     try {
         const projection = { userId: 0, appFile: 0, description: 0, categories: 0, photos: 0, __v: 0, createdAt: 0, whatsNew: 0 };
 
-        const result = await apps.find({ type: "App" }, projection);
+        const sort = { appName: 1 };
+
+        const result = await apps.find({ type: "App" }, projection).sort(sort);
 
         resp.send({ apps: result });
     } catch (error) {
@@ -24,7 +26,9 @@ exports.getAllGames = async (req, resp) => {
     try {
         const projection = { userId: 0, appFile: 0, description: 0, categories: 0, photos: 0, __v: 0, createdAt: 0, whatsNew: 0 };
 
-        const result = await apps.find({ type: "Game" }, projection);
+        const sort = { appName: 1 };
+
+        const result = await apps.find({ type: "Game" }, projection).sort(sort);
 
         resp.send({ apps: result });
     } catch (error) {
