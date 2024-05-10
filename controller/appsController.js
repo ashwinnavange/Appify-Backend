@@ -117,6 +117,30 @@ exports.postApp = async (req, resp) => {
     }
 };
 
+exports.increaseDownloadCount = async (req, resp) => {
+    try {
+        const app = await apps.findOne({ packageName: req.params.packageName });
+        if (!app) {
+            return resp.status(400).json({
+                success: false,
+                message: "App not found",
+            });
+        }
+        app.totalDownloads += 1;
+        await app.save();
+        resp.status(200).json({
+            success: true,
+            message: "Download count increased",
+        });
+    }
+    catch (error) {
+        return resp.status(400).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
 
 const giveCurrentDateTime = () => {
     const today = new Date();
